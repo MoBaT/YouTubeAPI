@@ -8,6 +8,9 @@ Public Class YouTube
     Private Http As New Http
 
     Private _RequestStop As Boolean = False
+    ''' <summary>
+    ''' If TRUE, stops any request that is currently ongoing.
+    ''' </summary>
     Public Property RequestStop As Boolean
         Get
             Return _RequestStop
@@ -18,6 +21,9 @@ Public Class YouTube
     End Property
 
     Private _RequestPause As Boolean = False
+    ''' <summary>
+    ''' If TRUE, pauses the request that is currently ongoing. If FALSE, the request will start out where it left off.
+    ''' </summary>
     Public Property RequestPause As Boolean
         Get
             Return _RequestPause
@@ -35,6 +41,9 @@ Public Class YouTube
     Private _PersistentLogin As Boolean
 
     Private _Account As AccountInformation = Nothing
+    ''' <summary>
+    ''' Current account that is logged in at the moment.
+    ''' </summary>
     Public Property Account As AccountInformation
         Get
             Return _Account
@@ -45,7 +54,10 @@ Public Class YouTube
     End Property
 
     Private _AccountsArray As New List(Of AccountInformation)
-    Public Property AllAccounts As List(Of AccountInformation)
+    ''' <summary>
+    ''' Array of logged in accounts that can be reused.
+    ''' </summary>
+    Public Property AccountsArray As List(Of AccountInformation)
         Get
             Return _AccountsArray
         End Get
@@ -55,6 +67,9 @@ Public Class YouTube
     End Property
 
     Private _Settings As New ApiSettings
+    ''' <summary>
+    ''' APISettings used to set the settings of various parts of the API.
+    ''' </summary>
     Public Property Settings As ApiSettings
         Get
             Return _Settings
@@ -64,16 +79,35 @@ Public Class YouTube
         End Set
     End Property
 
+    ''' <summary>
+    ''' Parameter takes in APISettings
+    ''' </summary>
     Public Sub New(ByVal Settings As ApiSettings)
         _Settings = Settings
     End Sub
 
+    ''' <summary>
+    ''' Notify used to handle events outside the class.
+    ''' </summary>
     Public Event Notify(ByVal Report() As Object)
+
+    ''' <summary>
+    ''' Dispose of API.
+    ''' </summary>
     Public Sub Dispose() Implements IDisposable.Dispose
         GC.SuppressFinalize(Me)
     End Sub
 
+    ''' <summary>
+    ''' Login to YouTube with the master account.
+    ''' </summary>
+    ''' <param name="Username">YouTube email as a string</param>
+    ''' <param name="Password">YouTube password as a string</param>
     Public Sub login(ByVal Username As String, ByVal Password As String)
+        RequestPause = False
+        RequestStop = False
+        Http = New Http
+
         Dim check = _AccountsArray.Find(Function(aiInfo As AccountInformation) aiInfo.Username.Equals(Username) And aiInfo.Password.Equals(Password))
         If Not TypeOf check Is AccountInformation Then
             _Account = New AccountInformation(Username, Password)
@@ -83,9 +117,8 @@ Public Class YouTube
 
         Try
             _Online = False
-
             With Http
-                ' Persistant cookies are used so you don't have to keep relogging in with accoutns you logged in before.
+                ' Persistant cookies are used so you don't have to keep relogging in with accounts you logged in before.
                 If Not Me.Account.Cookies.Count = 0 Then
                     _PersistentLogin = True
                     ' Stories the cookie to the specefic account in the ACCOUNT class.
@@ -187,6 +220,8 @@ ManualLogin:
         RaiseEvent Notify(New Object(0) {"COMPLETED_LOGIN"})
     End Sub '~~~~~~~~~
 
+
+
     'Public Sub Sync_Videos()
     '    Dim vids As New syncVideos
     '    AddHandler vids.Notify, AddressOf doEvents
@@ -219,8 +254,6 @@ ManualLogin:
     '    RemoveHandler subscribers.Notify, AddressOf doEvents
     '    subscribers.Dispose()
     'End Sub ''''''''''''
-
-
 
     Public Sub Sync_Contacts()
         'Dim SyncContacts_feed As Feed(Of Video)
@@ -289,11 +322,14 @@ ManualLogin:
     End Sub 'Disabled on YT right now
 
 
+    ''' <summary>
+    ''' Unsubscribe to YouTube users from your master account.
+    ''' </summary>
+    ''' <param name="usernames">Takes in a list of YouTube usernames to unsubscribe from.</param>
     Public Sub unsubscribe(ByVal usernames As List(Of String))
         login(_AccountsArray.Item(0).Username.ToString, _AccountsArray.Item(0).Password.ToString)
 
         If Not _Account.Cookies.Count = 0 Then
-            Http.AddCookie(_Account.Cookies.ToArray)
 
             ' INCREMENT AMOUNT OF USERS TO UNSUBSCRIBE FROM
             RaiseEvent Notify(New Object(1) {"USER_TOTAL", usernames.Count})
@@ -302,11 +338,12 @@ ManualLogin:
             For i As Integer = 0 To usernames.Count - 1
                 ' NOTIFY OF NEXT USER THAT IS GOING TO BE UNSUBSCRIBED
                 If Not _RequestStop = True Then
-                    Try
+
+                    If Not i = (usernames.Count - 1) Then
                         RaiseEvent Notify(New Object(1) {"USER_NEXT", usernames.Item(i + 1).ToString})
-                    Catch ex As Exception
+                    Else
                         RaiseEvent Notify(New Object(1) {"USER_NEXT", ""})
-                    End Try
+                    End If
 
                     Try
                         With Http
@@ -378,7 +415,7 @@ ManualLogin:
                     End Try
 
                     ' UPDATE THE STATISTICS TO SEE HOW MANY USERS LEFT
-                    RaiseEvent Notify(New Object(0) {"USER_LEFT"})
+                    RaiseEvent Notify(New Object(1) {"USER_LEFT", (usernames.Count - 1) - i})
 
                     ' SLEEP TO AMOUNT OF TIME SPECEFIED IN CONFIG FILE
                     If Not i = usernames.Count - 1 Then
@@ -393,11 +430,14 @@ ManualLogin:
         End If
     End Sub '~~~~~~~~~
 
+    ''' <summary>
+    ''' Subscribe to YouTube users from your master account.
+    ''' </summary>
+    ''' <param name="usernames">Takes in a list of YouTube usernames to subscribe to.</param>
     Public Sub subscribe(ByVal usernames As List(Of String))
         login(_AccountsArray.Item(0).Username.ToString, _AccountsArray.Item(0).Password.ToString)
 
         If Not _Account.Cookies.Count = 0 Then
-            Http.AddCookie(_Account.Cookies.ToArray)
 
             RaiseEvent Notify(New Object(1) {"USER_TOTAL", usernames.Count})
 
@@ -405,11 +445,11 @@ ManualLogin:
             For i As Integer = 0 To usernames.Count - 1
                 If Not _RequestStop = True Then
                     ' NOTIFY OF NEXT UPCOMING USERNAME
-                    Try
+                    If Not i = (usernames.Count - 1) Then
                         RaiseEvent Notify(New Object(1) {"USER_NEXT", usernames.Item(i + 1).ToString})
-                    Catch ex As Exception
+                    Else
                         RaiseEvent Notify(New Object(1) {"USER_NEXT", ""})
-                    End Try
+                    End If
 
                     Try
                         With Http
@@ -465,7 +505,7 @@ ManualLogin:
                             ElseIf hr.Html.Contains("{" & Chr(34) & "errors" & Chr(34) & ": [" & Chr(34) & "Invalid request") Then
                                 RaiseEvent Notify(New Object(2) {"ERROR", usernames.Item(i).ToString, "Invalid Request!"})
                                 Exit Try
-                            ElseIf hr.Html.Contains("{" & Chr(34) & "new_subscription" & Chr(34) & ": false") Then
+                            ElseIf hr.Html.Contains(Chr(34) & "new_subscription" & Chr(34) & ": false") Then
                                 RaiseEvent Notify(New Object(2) {"ERROR", usernames.Item(i).ToString, "Could not subscribe!"})
                                 Exit Try
                             End If
@@ -484,7 +524,7 @@ ManualLogin:
                     End Try
 
                     ' NOTIFY HOW MANY USERS ARE LEFT
-                    RaiseEvent Notify(New Object(0) {"USER_LEFT"})
+                    RaiseEvent Notify(New Object(1) {"USER_LEFT", (usernames.Count - 1) - i})
                     If Not i = usernames.Count - 1 Then
                         sleep(_Settings.waitTime)
                     End If
@@ -497,7 +537,14 @@ ManualLogin:
         End If
     End Sub '~~~~~~~~~~.
 
-    Public Sub sendMessages(ByVal Usernames As List(Of String), ByVal Messages As Dictionary(Of String, String), ByVal videoIds As List(Of String), ByVal Accounts As Dictionary(Of String, String))
+    ''' <summary>
+    ''' Send messages to a list of YouTube users and also embed a video. This dosen't require a master account and you can have a dictionary of other accounts to use.
+    ''' </summary>
+    ''' <param name="Usernames">Takes in a list of YouTube usernames to message.</param>
+    ''' <param name="Messages">Takes in a list of Messages to alternate between.</param>
+    ''' <param name="Accounts">Takes in a Dictionary of YouTube accounts to alternate between.</param>
+    ''' <param name="videoIds">Takes in a list of videoIds to alternate between.</param>
+    Public Sub sendMessages(ByVal Usernames As List(Of String), ByVal Messages As Dictionary(Of String, String), ByVal Accounts As Dictionary(Of String, String), ByVal videoIds As List(Of String))
         Dim account_index As Integer = 0
         Dim video_index As Integer = 0
         Dim videoID As String = Nothing
@@ -513,16 +560,16 @@ ManualLogin:
         For i As Integer = 0 To Usernames.Count - 1
             If Not _RequestStop = True Then
                 ' SHOW UPCOMING USER TO SEND MESSAGE TO
-                Try
+                If Not i = (Usernames.Count - 1) Then
                     RaiseEvent Notify(New Object(1) {"USER_NEXT", Usernames.Item(i + 1).ToString})
-                Catch ex As Exception
+                Else
                     RaiseEvent Notify(New Object(1) {"USER_NEXT", ""})
-                End Try
+                End If
 
                 ' ALTERNATING BETWEEN THE SUBJECTS THAT WERE SENT TO THE FUNCTION TO SEND TO USER
                 If Messages.Count >= 1 Then
-                    subject = Messages.Keys(message_index).ToString()
-                    body = Messages.Item(message_index).ToString()
+                    subject = Messages.ElementAt(message_index).Key.ToString()
+                    body = Messages.ElementAt(message_index).Value.ToString()
                     message_index += 1
 
                     If message_index > Messages.Count - 1 Then
@@ -556,8 +603,8 @@ ManualLogin:
                     login(Accounts.Keys(account_index).ToString, Accounts.Values(account_index).ToString)
                 End If
 
-                Http.ClearCookies()
-                Http.AddCookie(_Account.Cookies.ToArray)
+                'Http.ClearCookies()
+                'Http.AddCookie(_Account.Cookies.ToArray)
 
                 Dim url As String = "http://www.youtube.com/inbox?to_users=" & Usernames.Item(i).ToString & "&action_compose=1"
                 Try
@@ -623,7 +670,7 @@ ManualLogin:
                 End Try
 
                 ' SHOW AMOUNT OF USERS LEFT TO SEND TO
-                RaiseEvent Notify(New Object(0) {"USER_LEFT"})
+                RaiseEvent Notify(New Object(1) {"USER_LEFT", (Usernames.Count - 1) - i})
                 If Not i = Usernames.Count - 1 Then
                     sleep(_Settings.waitTime)
                 End If
@@ -637,6 +684,12 @@ ManualLogin:
         RaiseEvent Notify(New Object(0) {"COMPLETED"})
     End Sub '~~~~~~~~~~.
 
+    ''' <summary>
+    ''' Comments on YouTube videos of your choice. This dosen't require a master account and you can have a dictionary of other accounts to use.
+    ''' </summary>
+    ''' <param name="videoIDs">Takes in a list of videoID's to comment on/</param>
+    ''' <param name="comments">Takes in a list of comments to alternate between.</param>
+    ''' <param name="Accounts">Takes in a Dictionary of YouTube accounts to alternate between.</param>
     Public Sub videoComment(ByVal videoIDs As List(Of String), ByVal comments As List(Of String), ByVal Accounts As Dictionary(Of String, String))
         Dim account_index As Integer = 0
         Dim comment_index As Integer = 0
@@ -647,11 +700,11 @@ ManualLogin:
         For i As Integer = 0 To videoIDs.Count - 1
             If Not _RequestStop = True Then
 
-                Try
+                If Not i = (videoIDs.Count - 1) Then
                     RaiseEvent Notify(New Object(1) {"USER_NEXT", videoIDs.Item(i + 1).ToString})
-                Catch ex As Exception
+                Else
                     RaiseEvent Notify(New Object(1) {"USER_NEXT", ""})
-                End Try
+                End If
 
                 Try
 
@@ -666,8 +719,8 @@ ManualLogin:
                         login(Accounts.Keys(account_index).ToString, Accounts.Values(account_index).ToString)
                     End If
 
-                    Http.ClearCookies()
-                    Http.AddCookie(_Account.Cookies.ToArray)
+                    'Http.ClearCookies()
+                    'Http.AddCookie(_Account.Cookies.ToArray)
 
                     If comments.Count <= 0 Then
                         Exit For
@@ -788,7 +841,7 @@ captchaRedo:
                     Exit Try
                 End Try
 
-                RaiseEvent Notify(New Object(0) {"USER_LEFT"})
+                RaiseEvent Notify(New Object(1) {"USER_LEFT", (videoIDs.Count - 1) - i})
                 If Not i = videoIDs.Count - 1 Then
                     sleep(_Settings.waitTime)
                 End If
@@ -800,6 +853,12 @@ captchaRedo:
         RaiseEvent Notify(New Object(0) {"COMPLETED"})
     End Sub
 
+    ''' <summary>
+    ''' Comments on YouTube Users profiles. This dosen't require a master account and you can have a dictionary of other accounts to use.
+    ''' </summary>
+    ''' <param name="Usernames">Takes in a list of YouTube usernames to comment on their profile.</param>
+    ''' <param name="comments">Takes in a list of comments to alternate between.</param>
+    ''' <param name="Accounts">Takes in a Dictionary of YouTube accounts to alternate between.</param>
     Public Sub profileComment(ByVal Usernames As List(Of String), ByVal comments As List(Of String), ByVal Accounts As Dictionary(Of String, String))
         Dim account_index As Integer = 0
         Dim comment_index As Integer = 0
@@ -813,11 +872,11 @@ captchaRedo:
         For i As Integer = 0 To Usernames.Count - 1
             If Not _RequestStop = True Then
                 ' SHOW NEXT USER IN LINE OF PROFILE COMMENTS
-                Try
+                If Not i = (Usernames.Count - 1) Then
                     RaiseEvent Notify(New Object(1) {"USER_NEXT", Usernames.Item(i + 1).ToString})
-                Catch ex As Exception
+                Else
                     RaiseEvent Notify(New Object(1) {"USER_NEXT", ""})
-                End Try
+                End If
 
                 Try
 
@@ -833,8 +892,8 @@ captchaRedo:
                         login(Accounts.Keys(account_index).ToString, Accounts.Values(account_index).ToString)
                     End If
 
-                    Http.ClearCookies()
-                    Http.AddCookie(_Account.Cookies.ToArray)
+                    'Http.ClearCookies()
+                    'Http.AddCookie(_Account.Cookies.ToArray)
 
                     ' EXIT IF NO COMMENTS ARE PUT ELSE ALTERNATE BETWEEN DIFFERENT COMMENTS SPECEFIED
                     If comments.Count <= 0 Then
@@ -982,7 +1041,7 @@ captchaRedo:
                 End Try
 
                 'NOTIFY AMOUNT OF USERS LEFT
-                RaiseEvent Notify(New Object(0) {"USER_LEFT"})
+                RaiseEvent Notify(New Object(1) {"USER_LEFT", (Usernames.Count - 1) - i})
                 ' SLEEP AFTER EACH REQUEST
                 If Not i = Usernames.Count - 1 Then
                     sleep(_Settings.waitTime)
@@ -995,30 +1054,33 @@ captchaRedo:
         'NOTIFICATION OF COMPLETION
         RaiseEvent Notify(New Object(0) {"COMPLETED"})
     End Sub
-    Private Sub sleep(ByVal time As Integer)
-        Dim increment As Integer = time / 1000
 
-        'RaiseEvent Notify(New Object(0) {"ResetTime"})
+    Private Sub sleep(ByVal time As Integer)
+        Dim increment As Integer = time
+
         For i As Integer = 0 To increment - 1
             If _RequestPause = False Then
                 If _RequestStop = False Then
-                    ' RaiseEvent Notify(New Object(0) {"Time"})
+                    RaiseEvent Notify(New Object(1) {"TIME_LEFT", increment - i})
                     Threading.Thread.Sleep(1000)
                 Else
                     _RequestPause = False
-                    Exit Sub
+                    Exit For
                 End If
             Else
                 For i2 As Integer = 0 To 86400
                     If _RequestPause = True Then
                         If _RequestStop = False Then
+                            RaiseEvent Notify(New Object(0) {"PAUSED"})
                             Threading.Thread.Sleep(1000)
                         Else
+                            RaiseEvent Notify(New Object(0) {"STOPPED"})
                             _RequestPause = False
                             Exit Sub
                         End If
                     Else
-                        Exit Sub
+                        RaiseEvent Notify(New Object(0) {"RESUMED"})
+                        Exit For
                     End If
                 Next
             End If
@@ -1082,7 +1144,7 @@ captchaRedo:
         Return True
     End Function
     Private Function checkBlacklistUser(ByVal username As String) As Boolean
-        If _Settings.checkBlacklistUser = True Then
+        If _Settings.checkBlacklistUsers = True Then
             Dim b As Boolean = _Settings.blacklistedUsers.Any(Function(s) username.Contains(s))
             If b = True Then
                 Return True

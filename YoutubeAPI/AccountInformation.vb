@@ -2,7 +2,11 @@
 Imports YoutubeAPI.Utility.Http
 
 Public Class AccountInformation
+
     Private _Username As String = String.Empty
+    ''' <summary>
+    ''' YouTube username.
+    ''' </summary>
     Public Property Username As String
         Get
             Return _Username
@@ -13,6 +17,9 @@ Public Class AccountInformation
     End Property
 
     Private _Password As String = String.Empty
+    ''' <summary>
+    ''' YouTube password.
+    ''' </summary>
     Public Property Password As String
         Get
             Return _Password
@@ -23,6 +30,9 @@ Public Class AccountInformation
     End Property
 
     Private _Cookies As New List(Of HttpCookie)
+    ''' <summary>
+    ''' YouTube cookies. If sucessfully logged in, there will be cookies.
+    ''' </summary>
     Public Property Cookies As List(Of HttpCookie)
         Get
             Return _Cookies
