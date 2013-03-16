@@ -10,10 +10,13 @@ The goal of the project is to create a quick way of doing different YouTube requ
 - Multiple Account support with ability to save cookies and reuse
 - Subscribe
 - Unsibscribe
+- Liking / Disliking Videos
 - Multiple Account Profile Commenting
 - Multiple Account Video Commenting
 - Multiple Account Message Sending
 - Settings (Wait Time, Blacklisting(Video + User), Captcha Find, .... More in USAGE)
+- ChannelInformation Class allows you to specify a channel username and get information on their channel
+- VideoIfnromation Class allows you to specify a videoID and get information about the video
 
 #### USE - SETTINGS ####
 
@@ -81,7 +84,7 @@ yt.dispose() 'Dispose YouTube Class
 - ```sendMessage(Usernames as List(Of String), Messages as Dictionary(Of String (Subject), String (Body)), videoIDs as List(Of String), Accounts as Dictionary(Of String, String))``` (The Send Message Function will send specefic people on your username list messages that the bot alternates between. For example, if you have a list of usernames which contain, Albert, Peter, and Julia, subjects that contain Hello and Howdy, and bodies that Include "What is up" and "Hello Buddy". The function will first send to the User Albert, Subject: Hello, and Body: What is up". The next user will get the next set of Subject and body. If there are more than 2 and only 2 bodies, it will alternates between the 2 bodies after each user. If you inserted a list of videoID's, along with the message, it will attach a video to the message. Videos also alternate similar to how the subject and bodies work. Now for the list of Accounts, If you want to use multiple accounts to send messages and not just the main one, you can create a dictionary of Accounts (username, password) and then the function will Login to the account and alternate between usernames to send to users. Great thing about adding accounts to the function is the Credentials get saved to the .AccountsArray() where you can export it to a variable outside and then reuse the accounts later one. For example if you were to run a different function like Profile Comment, you can put the AccountsArray back into the Class and then the function wont have to relogin the accounts it has logged in before becuase the cookies and credentials were saved! Notice, that the master account you logged in with will not be used. If you want that to be used, you will have to put it into the Accounts Dictionary as a entry.)
 - ```videoComment(videoIDs as List(Of String), Comments as List(Of String), Accounts as Dictionary(Of String, String))``` (Similar to how sendMessage works, you insert a list of videoID's to send comments to. Comments will alternate between the amount you have inputted in. The Accounts you put in will alternate and send messages from different accounts each time going down the list of accounts and starting over to the first account when it reaches the end, IF there are more videos to send comments to.)
 - ```profileComment(Usernames as List(Of String), Comments as List(Of String), Accounts as Dictionary(Of String, String))``` (Exactly how videoComment works but with users and commenting to their profiles.)
-
+- ```LDlVideos(VideoIDs as List(Of String), Accounts as Dictionary(Of String, String), Options as Boolean) (Allows you to Like / Dislike videos. Currently Supports only 1 account and not multiple account logging in. In order to specify whether you want to Like / Dislike, you will set the options variables. If Options = False, then it will dislike videos. If Options = True, it will like videos.)
 What we have now using the Settings from the top part:
 
 ```vb
