@@ -41,6 +41,14 @@ The goal of the project is to create a quick way of doing different YouTube requ
     - ```.Account()``` (The current account that that class is using. I would not recommend playing with this unless you know what you are doing)
     - ```.AccountsArray()``` (The accounts array is a list of AccountInformation that has been used by the class. It can be a list of 1 - XX amount of users that have been sucessfully logged into YouTube. The AccountInformation class holdes the Credentials of the account and the cookies. I recommend using a global variable to store the account array when you are done using the YouTube class. This is so whenever you want to use the YouTube class elsewhere, you can do ```yt.AccountsArray = Account``` , where Account is the global variable which is a list(Of AccountInformation) and reuse the logged in users you had before instead of logging into each account seperatly.)
     - ```.Settings``` (Alongside the requirement of ApiSettings for the YouTube class, whenever you modify the settings, you can put it into the YouTube class by doing something along the lines of ```yt.settings = myGlobalSettings```)
+    - ```.pause()``` (Pauses current class)
+    - ```.unpause()``` (unpauses class)
+    - ```.terminate()``` (Terminates anything running in class)
+    - ```.RequestStoped``` (Return TRUE if stoped, FALSE it not)
+    - ```.RequestPaused``` (Return TRUE if paused class, FALSE if not)
+    - ```.captchaIMGLink``` (Returns the captcha Image link if there's any captcha found)
+    - ```.captchaCode``` (Returns the captcha code you have set and you can set the captcha code if you need to input captcha to continue)
+    - ```.Nofity()``` (Used to handled Events that come up in the class. See Captcha Handling for more information)
     - ```.Dispose()``` (Used to Dispose of the Class)
 
 What we have so far. This is just a rough code, please do it on your own for your own liking:
