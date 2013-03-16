@@ -970,8 +970,7 @@ captchaRedo:
     ''' <param name="Accounts">Takes in a Dictionary of YouTube accounts to alternate between. NOT DONE~~~~~~~</param>
     ''' <param name="options">If option = FALSE, then the function will dislike, if TRUE, it will like.</param>
     Public Sub LDlVideos(ByVal videoIDs As List(Of String), ByVal Accounts As Dictionary(Of String, String), ByVal options As Boolean)
-        login(_AccountsArray.Item(0).Username.ToString, _AccountsArray.Item(0).Password.ToString)
-
+        Dim account_index As Integer = 0
         Dim LDl As String = Nothing
         If options = False Then
             LDl = "dislike"
@@ -980,7 +979,6 @@ captchaRedo:
         End If
 
         If Not _Account.Cookies.Count = 0 Then
-
             RaiseEvent Notify(New Object(1) {"USER_TOTAL", videoIDs.Count})
 
             ' LOOP THROUGH SUBSCRIBTION OF USERS
@@ -991,6 +989,18 @@ captchaRedo:
                         RaiseEvent Notify(New Object(1) {"USER_NEXT", videoIDs.Item(i + 1).ToString})
                     Else
                         RaiseEvent Notify(New Object(1) {"USER_NEXT", ""})
+                    End If
+
+                    ' ALTERNATE BETWEEN THE DIFFERENT SPECEFIED ACCOUNTS YOU USED.
+                    If Not Accounts.Count <= 0 Then
+                        login(Accounts.Keys(account_index).ToString, Accounts.Values(account_index).ToString)
+                        account_index += 1
+
+                        If account_index > Accounts.Count - 1 Then
+                            account_index = 0
+                        End If
+                    Else
+                        login(Accounts.Keys(account_index).ToString, Accounts.Values(account_index).ToString)
                     End If
 
                     Try
