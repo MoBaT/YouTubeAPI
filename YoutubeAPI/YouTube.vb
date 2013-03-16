@@ -32,6 +32,30 @@ Public Class YouTube
         End Get
     End Property
 
+    Private _captchaCode As String = Nothing
+    ''' <summary>
+    ''' Sets or return the captcha you inputted
+    ''' </summary>
+    Public Property captchaCode As String
+        Get
+            Return _captchaCode
+        End Get
+        Set(ByVal value As String)
+            _captchaCode = value
+            waitForIt.Set()
+        End Set
+    End Property
+
+    Private _captchaIMGLink As String = Nothing
+    ''' <summary>
+    ''' Sets or return the captcha you inputted
+    ''' </summary>
+    Public ReadOnly Property captchaIMGLink As String
+        Get
+            Return _captchaIMGLink
+        End Get
+    End Property
+
     Private _Online As Boolean = False
     Public Function Online()
         Return _Online
@@ -703,12 +727,14 @@ captchaRedo:
                                     RaiseEvent Notify(New Object(1) {"ERROR", he.Message})
                                     Exit Try
                                 End If
+
                                 Dim img As String
                                 img = Split(hr.Html, "'/cimg?c=")(1)
                                 img = Split(img, "&")(0)
 
-                                Dim c As New frmCaptcha
-                                Dim result As String = c.ShowDialog("http://www.youtube.com/cimg?c=" & img)
+                                _captchaIMGLink = "http://www.youtube.com/cimg?c=" & img
+                                waitForIt.WaitOne()
+                                _captchaIMGLink = Nothing
 
                                 Dim sb3 As New StringBuilder
                                 sb3.Append("session_token=" & .UrlEncode(session_token))
@@ -717,7 +743,7 @@ captchaRedo:
                                 sb3.Append("&source=w")
                                 sb3.Append("&reply_parent_id=")
                                 sb3.Append("&comment=" & .UrlEncode(current_comment))
-                                sb3.Append("&response=" & result)
+                                sb3.Append("&response=" & _captchaCode)
                                 sb3.Append("&challenge=" & img)
                                 sb3.Append("&screen=" & .UrlEncode("h=1050&w=1680&d=32"))
                                 sb.Append("&pid=" & plid)
@@ -886,23 +912,22 @@ captchaRedo:
                                 img = Split(hr.Html, "cimg?c=")(1)
                                 img = Split(img, "\")(0)
 
-                                ' SHOW CAPTCHA FORM FOR USER TO INPUT IT
-                                Dim c As New frmCaptcha
-                                Dim result As String = c.ShowDialog("http://www.youtube.com/cimg?c=" & img)
+                                _captchaIMGLink = "http://www.youtube.com/cimg?c=" & img
+                                waitForIt.WaitOne()
+                                _captchaIMGLink = Nothing
 
                                 Dim sb2 As New StringBuilder
-
                                 ' CREATE POST DATA WITH THE CAPTCHA
                                 If channelid = 0 Then
                                     sb2.Append("session_token=" & .UrlEncode(session_token))
-                                    sb2.Append("&messages=[{" & Chr(34) & "type" & Chr(34) & ":" & Chr(34) & "box_method" & Chr(34) & "," & Chr(34) & "request" & Chr(34) & ":{" & Chr(34) & "name" & Chr(34) & ":" & Chr(34) & "user_comments" & Chr(34) & "," & Chr(34) & "x_position" & Chr(34) & ":1," & Chr(34) & "y_position" & Chr(34) & ":42," & Chr(34) & "palette" & Chr(34) & ":" & Chr(34) & "default" & Chr(34) & "," & Chr(34) & "method" & Chr(34) & ":" & Chr(34) & "add_comment" & Chr(34) & "," & Chr(34) & "params" & Chr(34) & ":{" & Chr(34) & "comment" & Chr(34) & ":" & Chr(34) & current_comment & Chr(34) & "," & Chr(34) & "view_all_mode" & Chr(34) & ":" & Chr(34) & "False" & Chr(34) & "," & Chr(34) & "challenge" & Chr(34) & ":" & Chr(34) & img & Chr(34) & "," & Chr(34) & "response" & Chr(34) & ":" & Chr(34) & result & Chr(34) & "}}}]")
+                                    sb2.Append("&messages=[{" & Chr(34) & "type" & Chr(34) & ":" & Chr(34) & "box_method" & Chr(34) & "," & Chr(34) & "request" & Chr(34) & ":{" & Chr(34) & "name" & Chr(34) & ":" & Chr(34) & "user_comments" & Chr(34) & "," & Chr(34) & "x_position" & Chr(34) & ":1," & Chr(34) & "y_position" & Chr(34) & ":42," & Chr(34) & "palette" & Chr(34) & ":" & Chr(34) & "default" & Chr(34) & "," & Chr(34) & "method" & Chr(34) & ":" & Chr(34) & "add_comment" & Chr(34) & "," & Chr(34) & "params" & Chr(34) & ":{" & Chr(34) & "comment" & Chr(34) & ":" & Chr(34) & current_comment & Chr(34) & "," & Chr(34) & "view_all_mode" & Chr(34) & ":" & Chr(34) & "False" & Chr(34) & "," & Chr(34) & "challenge" & Chr(34) & ":" & Chr(34) & img & Chr(34) & "," & Chr(34) & "response" & Chr(34) & ":" & Chr(34) & _captchaCode & Chr(34) & "}}}]")
                                 Else
                                     sb2.Append("session_token=" & session_token)
                                     sb2.Append("&module=10000")
                                     sb2.Append("&channel_id=" & channel_id)
                                     sb2.Append("&comment=" & current_comment)
                                     sb2.Append("&challenge=" & img)
-                                    sb2.Append("&response=" & result)
+                                    sb2.Append("&response=" & _captchaCode)
                                 End If
 
                                 ' SENT POST DATA

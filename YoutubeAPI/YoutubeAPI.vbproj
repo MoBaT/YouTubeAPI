@@ -70,12 +70,6 @@
     <Compile Include="AccountInformation.vb" />
     <Compile Include="ApiSettings.vb" />
     <Compile Include="ChannelInformation.vb" />
-    <Compile Include="frmCaptcha.Designer.vb">
-      <DependentUpon>frmCaptcha.vb</DependentUpon>
-    </Compile>
-    <Compile Include="frmCaptcha.vb">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="Http.vb" />
     <Compile Include="YouTube.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
@@ -96,10 +90,6 @@
     <Compile Include="VideoInformation.vb" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="frmCaptcha.resx">
-      <DependentUpon>frmCaptcha.vb</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.vb</LastGenOutput>
