@@ -10,31 +10,26 @@ Imports System.Text.RegularExpressions
 Public Class YouTube
     Implements IDisposable
     Private Http As New Http
+    Dim waitForIt As New Threading.AutoResetEvent(False)
 
     Private _RequestStop As Boolean = False
     ''' <summary>
-    ''' If TRUE, stops any request that is currently ongoing.
+    ''' Returns true if stopped and false if not.
     ''' </summary>
-    Public Property RequestStop As Boolean
+    Public ReadOnly Property RequestStoped As Boolean
         Get
             Return _RequestStop
         End Get
-        Set(ByVal value As Boolean)
-            _RequestStop = value
-        End Set
     End Property
 
     Private _RequestPause As Boolean = False
     ''' <summary>
-    ''' If TRUE, pauses the request that is currently ongoing. If FALSE, the request will start out where it left off.
+    ''' Returns true if paused and false if not.
     ''' </summary>
-    Public Property RequestPause As Boolean
+    Public ReadOnly Property RequestPaused As Boolean
         Get
             Return _RequestPause
         End Get
-        Set(ByVal value As Boolean)
-            _RequestPause = value
-        End Set
     End Property
 
     Private _Online As Boolean = False
@@ -109,8 +104,6 @@ Public Class YouTube
     ''' <param name="Username">YouTube email as a string</param>
     ''' <param name="Password">YouTube password as a string</param>
     Public Sub login(ByVal Username As String, ByVal Password As String)
-        RequestPause = False
-        RequestStop = False
         Http = New Http
 
         Dim check = _AccountsArray.Find(Function(aiInfo As AccountInformation) aiInfo.Username.Equals(Username) And aiInfo.Password.Equals(Password))
@@ -1070,37 +1063,61 @@ captchaRedo:
             RaiseEvent Notify(New Object(0) {"COMPLETED"})
         End If
     End Sub
-
+    ''' <summary>
+    ''' Pauses the current actions in class.
+    ''' </summary>
+    Public Sub pause()
+        _RequestPause = True
+        waitForIt.Set()
+    End Sub
+    ''' <summary>
+    ''' Resumes paused actions in class.
+    ''' </summary>
+    Public Sub unpause()
+        If _RequestPause = True Then
+            _RequestPause = False
+            waitForIt.Set()
+        End If
+    End Sub
+    ''' <summary>
+    ''' Stops all actions in class
+    ''' </summary>
+    Public Sub terminate()
+        _RequestPause = False
+        _RequestStop = True
+        waitForIt.Set()
+    End Sub
     Private Sub sleep(ByVal time As Integer)
-        Dim increment As Integer = time
+        Static start_time As New DateTime
+        Static stop_time As New DateTime
+        Dim elapsed_time As New TimeSpan
 
-        For i As Integer = 0 To increment - 1
-            If _RequestPause = False Then
-                If _RequestStop = False Then
-                    RaiseEvent Notify(New Object(1) {"TIME_LEFT", increment - i})
-                    Threading.Thread.Sleep(1000)
-                Else
-                    _RequestPause = False
-                    Exit For
-                End If
-            Else
-                For i2 As Integer = 0 To 86400
-                    If _RequestPause = True Then
-                        If _RequestStop = False Then
-                            RaiseEvent Notify(New Object(0) {"PAUSED"})
-                            Threading.Thread.Sleep(1000)
-                        Else
-                            RaiseEvent Notify(New Object(0) {"STOPPED"})
-                            _RequestPause = False
-                            Exit Sub
-                        End If
-                    Else
-                        RaiseEvent Notify(New Object(0) {"RESUMED"})
-                        Exit For
-                    End If
-                Next
+        If Not _RequestPause Or Not _RequestStop Then
+            RaiseEvent Notify(New Object(0) {"WAIT"})
+
+            start_time = Now
+            waitForIt.WaitOne(New TimeSpan(0, 0, time))
+            stop_time = Now
+            elapsed_time = stop_time.Subtract(start_time)
+
+            RaiseEvent Notify(New Object(0) {"UNWAIT"})
+        End If
+
+        If _RequestPause = True Then
+            RaiseEvent Notify(New Object(0) {"PAUSED"})
+            waitForIt.WaitOne()
+            _RequestPause = False
+            RaiseEvent Notify(New Object(0) {"UNPAUSED"})
+
+            If elapsed_time.Seconds < time Then
+                sleep(time - elapsed_time.Seconds)
             End If
-        Next
+
+        ElseIf _RequestStop = True Then
+            RaiseEvent Notify(New Object(0) {"TERMINATE"})
+            waitForIt.Set()
+            Exit Sub
+        End If
     End Sub
     Private Function checkFilters(ByVal html As String) As Boolean
 
