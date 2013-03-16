@@ -61,6 +61,7 @@ Public Class YouTube
     ''' <summary>
     ''' Array of logged in accounts that can be reused.
     ''' </summary>
+    ''' 
     Public Property AccountsArray As List(Of AccountInformation)
         Get
             Return _AccountsArray
@@ -975,8 +976,15 @@ captchaRedo:
     ''' <param name="videoIDs">Takes in a list of videoID's to like.</param>
     ''' <param name="Accounts">Takes in a Dictionary of YouTube accounts to alternate between. NOT DONE~~~~~~~</param>
     ''' <param name="options">If option = FALSE, then the function will dislike, if TRUE, it will like.</param>
-    Public Sub likeVideos(ByVal videoIDs As List(Of String), ByVal Accounts As Dictionary(Of String, String), ByVal options As Boolean)
+    Public Sub LDlVideos(ByVal videoIDs As List(Of String), ByVal Accounts As Dictionary(Of String, String), ByVal options As Boolean)
         login(_AccountsArray.Item(0).Username.ToString, _AccountsArray.Item(0).Password.ToString)
+
+        Dim LDl As String = Nothing
+        If options = False Then
+            LDl = "dislike"
+        Else
+            LDl = "like"
+        End If
 
         If Not _Account.Cookies.Count = 0 Then
 
@@ -1025,7 +1033,7 @@ captchaRedo:
 
                             .Referer = .LastResponseUri
                             ' SUBMIT POST DATA
-                            hr = .GetResponse("http://www.youtube.com/watch_actions_ajax?action_dislike_video=1&video_id=" & videoIDs.Item(i) & "&plid=" & plid, sb.ToString)
+                            hr = .GetResponse("http://www.youtube.com/watch_actions_ajax?action_" & LDl & "_video=1&video_id=" & videoIDs.Item(i) & "&plid=" & plid, sb.ToString)
 
                             'CHECK TO SEE IF USER IS SUBSCRIBED OR IT FAILED
                             If hr.Html.Contains("<![CDATA[0]]") Then
@@ -1063,9 +1071,6 @@ captchaRedo:
         End If
     End Sub
 
-    Public Sub dislikeVideos(ByVal videoIDs As List(Of String), ByVal Accounts As Dictionary(Of String, String))
-
-    End Sub
     Private Sub sleep(ByVal time As Integer)
         Dim increment As Integer = time
 
@@ -1097,7 +1102,7 @@ captchaRedo:
             End If
         Next
     End Sub
-    Public Function checkFilters(ByVal html As String) As Boolean
+    Private Function checkFilters(ByVal html As String) As Boolean
 
         Dim videos As Integer = 0, subs As Integer = 0, vidViews As Integer = 0
         Dim dateJoined As Date = Nothing, country As String = Nothing
