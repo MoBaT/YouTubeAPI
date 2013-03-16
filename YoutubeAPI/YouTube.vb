@@ -220,8 +220,6 @@ ManualLogin:
         RaiseEvent Notify(New Object(0) {"COMPLETED_LOGIN"})
     End Sub '~~~~~~~~~
 
-
-
     'Public Sub Sync_Videos()
     '    Dim vids As New syncVideos
     '    AddHandler vids.Notify, AddressOf doEvents
@@ -253,74 +251,7 @@ ManualLogin:
     '    subscribers.run(iAccounts.getAccount(0))
     '    RemoveHandler subscribers.Notify, AddressOf doEvents
     '    subscribers.Dispose()
-    'End Sub ''''''''''''
-
-    Public Sub Sync_Contacts()
-        'Dim SyncContacts_feed As Feed(Of Video)
-        'Dim SyncContacts_index As Integer = 1
-        'Try
-        '    Dim catID As Integer = Convert.ToInt32(GetSQL("SELECT id FROM categories WHERE name= 'My Contacts' AND userID = '" & GLOBAL_USERID & "' AND info = '0'"))
-        '    SetSQL("DELETE FROM users WHERE userID='" & GLOBAL_USERID & "' AND category = '" & catID & "'")
-
-        '    While True
-        '        SyncContacts_feed = yt_request.GetStandardFeed("http://gdata.youtube.com/feeds/api/users/default/contacts?start-index=" & SyncContacts_index & "&max-results=10")
-
-        '        For Each entry As Video In SyncContacts_feed.Entries
-        '            Try
-        '                SetSQL("INSERT INTO users (category, userID, name) VALUES ('" & catID & "', '" & GLOBAL_USERID & "', '" & entry.Title.ToString & "')")
-        '                RaiseEvent Notify(New Object(0) {"incrementTotalContacts"})
-        '            Catch ex As Exception
-        '                'do this
-        '            End Try
-        '        Next
-
-        '        SyncContacts_index += 10
-        '        If SyncContacts_index >= SyncContacts_feed.TotalResults + 10 Then
-        '            Exit While
-        '        End If
-        '    End While
-        'Catch e As Google.GData.Client.ClientFeedException
-        '    MsgBox(e.ToString)
-        'End Try
-        'RaiseEvent Notify(New Object(0) {"doneContacts"})
-    End Sub ' Disabled Youtube
-
-    Public Sub ConactRequest(ByVal usernames As ArrayList)
-
-        'For i As Integer = 0 To usernames.Count - 1
-        '    Try
-        '        With Http
-        '            Dim hr As HttpResponse = .GetResponse("http://www.youtube.com/user/" & usernames.Item(i).ToString)
-        '            If Not hr.Exception Is Nothing Then
-        '                Dim he As HttpError = .ProcessException(hr.Exception)
-        '                RaiseEvent Notify(New Object(1) {"httpError", he.Message})
-        '                Exit Try
-        '            End If
-
-        '            Dim sb As New StringBuilder
-        '            Dim session_token As String
-        '            session_token = Split(hr.Html, "window.ajax_session_info = 'session_token=")(1)
-        '            session_token = Split(session_token, "'")(0)
-
-        '            sb.Append("session_token=" & .UrlEncode(session_token))
-        '            sb.Append("&messages=[{" & Chr(34) & "type" & Chr(34) & ":" & Chr(34) & "box_method" & Chr(34) & "," & Chr(34) & "request" & Chr(34) & ":{" & Chr(34) & "name" & Chr(34) & ":" & Chr(34) & "user_profile" & Chr(34) & "," & Chr(34) & "x_position" & Chr(34) & ":0," & Chr(34) & "y_position" & Chr(34) & ":0," & Chr(34) & "palette" & Chr(34) & ":" & Chr(34) & "default" & Chr(34) & "," & Chr(34) & "method" & Chr(34) & ":" & Chr(34) & "add_friend" & Chr(34) & "," & Chr(34) & "params" & Chr(34) & ":{" & Chr(34) & "username" & Chr(34) & ":" & Chr(34) & usernames.Item(i).ToString & Chr(34) & "}}}]")
-
-        '            .Referer = .LastResponseUri
-        '            hr = .GetResponse("http://www.youtube.com/profile_ajax?action_ajax=1&user=" & usernames.Item(i).ToString & "&new=1&box_method=add_friend&box_name=user_profile", sb.ToString)
-        '            If Not hr.Exception Is Nothing Then
-        '                Dim he As HttpError = .ProcessException(hr.Exception)
-        '                RaiseEvent Notify(New Object(1) {"httpError", he.Message})
-        '                Exit Try
-        '            End If
-
-        '        End With
-
-        '    Catch ex As Exception
-
-        '    End Try
-        'Next
-    End Sub 'Disabled on YT right now
-
+    'End Sub '''''''''''' // Test
 
     ''' <summary>
     ''' Unsubscribe to YouTube users from your master account.
@@ -360,13 +291,6 @@ ManualLogin:
                                 RaiseEvent Notify(New Object(2) {"SKIPPED", usernames.Item(i).ToString, "Blacklisted!"})
                                 Exit Try
                             End If
-
-                            '' CHECK IF USER ACCOUNT IS ACTIVE
-                            'Dim reason As String = checkAccount(hr.Html, usernames.Item(i).ToString, 2)
-                            'If Not reason = Nothing Then
-                            '    RaiseEvent Notify(New Object(2) {"ERROR", usernames.Item(i).ToString, reason})
-                            '    Exit Try
-                            'End If
 
                             ' CHECK FILTERS TO SEE IF IT PASSES OR FAILS
                             If checkFilters(hr.Html) = False Then
@@ -466,13 +390,6 @@ ManualLogin:
                                 RaiseEvent Notify(New Object(2) {"SKIPPED", usernames.Item(i).ToString, "Blacklisted!"})
                                 Exit Try
                             End If
-
-                            '' CHECK TO SEE IF USER ACCOUNT IS ACTIVE
-                            'Dim reason As String = checkAccount(hr.Html, usernames.Item(i).ToString, 1)
-                            'If Not reason = Nothing Then
-                            '    RaiseEvent Notify(New Object(2) {"ERROR", usernames.Item(i).ToString, reason})
-                            '    Exit Try
-                            'End If
 
                             ' CHECK TO SEE IF USER PASSES OR FAILS FILTERS
                             If checkFilters(hr.Html) = False Then
@@ -741,13 +658,10 @@ redo:
                             Exit Try
                         End If
 
-                        'Make a filter for these videos
-
-                        'Dim reason As String = checkVideo(hr.Html)
-                        'If Not reason = Nothing Then
-                        '    RaiseEvent Notify(New Object(2) {"Error", videoIDs.Item(i).ToString, reason})
-                        '    Exit Try
-                        'End If
+                        If checkBlacklistVideo(videoIDs.Item(i).ToString) = True Then
+                            RaiseEvent Notify(New Object(2) {"SKIPPED", videoIDs.Item(i).ToString, "Blacklisted!"})
+                            Exit Try
+                        End If
 
 
                         Dim sb As New StringBuilder
@@ -924,13 +838,6 @@ redo:
                             RaiseEvent Notify(New Object(2) {"SKIPPED", Usernames.Item(i).ToString, "Blacklisted!"})
                             Exit Try
                         End If
-
-                        ' CHECK IS USER ACCOUNT IS ACTIVE
-                        'Dim reason As String = checkAccount(hr.Html, Usernames.Item(i).ToString, 0)
-                        'If Not reason = Nothing Then
-                        '    RaiseEvent Notify(New Object(2) {"ERROR", Usernames.Item(i).ToString, reason})
-                        '    Exit Try
-                        'End If
 
                         ' CHECK USER FILTERS
                         If checkFilters(hr.Html) = False Then
@@ -1142,7 +1049,7 @@ captchaRedo:
         End Try
 
         Return True
-    End Function
+    End Function 'Needs work
     Private Function checkBlacklistUser(ByVal username As String) As Boolean
         If _Settings.checkBlacklistUsers = True Then
             Dim b As Boolean = _Settings.blacklistedUsers.Any(Function(s) username.Contains(s))
