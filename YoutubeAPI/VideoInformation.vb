@@ -28,7 +28,10 @@ Public Class VideoInformation
         Category = splitBetween(source, "<p id=""eow-category""><a href=""/", Chr(34))
         License = splitBetween(source, "<p id=""eow-reuse"">", "</p>").ToString.Replace(vbLf, "")
         channelName = splitBetween(source, "yt-user-videos""href=""/user/", "/")
-        channelVideoAmount = Integer.Parse(splitBetween(source, "&amp;feature=watch"">", " "))
+
+        Dim datasession As String = splitBetween(source, "data-sessionlink=""", Chr(34))
+        channelVideoAmount = Integer.Parse(splitBetween(source, "videos""data-sessionlink=""" & datasession & "&amp;feature=watch"">", " "))
+
         channelSubscribers = Integer.Parse(splitBetween(source, "subscriber-count-branded-horizontal"">", "</").ToString.Replace(",", ""))
         commentAmount = Integer.Parse(splitBetween(source, "<strong>All Comments</strong> (", ")").ToString.Replace(",", ""))
         Views = Integer.Parse(splitBetween(source, "<span class=""watch-view-count"">", "</").ToString.Replace(",", ""))

@@ -9,7 +9,7 @@ Public Class ChannelInformation
     Public subscribers As String
     Public totalVideoViews As String
 
-    Public Sub getVideoInformation(ByVal username As String)
+    Public Sub getChannelInformation(ByVal username As String)
         Dim wc As New WebClient
         Dim source As String = wc.DownloadString("http://www.youtube.com/" & username)
 
