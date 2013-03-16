@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="AccountInformation.vb" />
     <Compile Include="ApiSettings.vb" />
+    <Compile Include="ChannelInformation.vb" />
     <Compile Include="frmCaptcha.Designer.vb">
       <DependentUpon>frmCaptcha.vb</DependentUpon>
     </Compile>
@@ -92,6 +93,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="VideoInformation.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmCaptcha.resx">

@@ -1,7 +1,11 @@
-﻿Imports YoutubeAPI.Utility
+﻿' Need to complete CheckFilters. Still deciding.
+' Need a way to get YouTube videos in 1 go for filters.
+
+Imports YoutubeAPI.Utility
 Imports YoutubeAPI.Utility.Http
 Imports YoutubeAPI.ApiSettings
 Imports System.Text
+Imports System.Text.RegularExpressions
 
 Public Class YouTube
     Implements IDisposable
@@ -540,6 +544,8 @@ ManualLogin:
                             Exit Try
                         End If
 
+                        'checkFilters SHOULD I OR NOT?
+
                         ' CREATE POST DATA
                         Dim sb As New StringBuilder
                         Dim session_token As String
@@ -604,7 +610,7 @@ ManualLogin:
     ''' <summary>
     ''' Comments on YouTube videos of your choice. This dosen't require a master account and you can have a dictionary of other accounts to use.
     ''' </summary>
-    ''' <param name="videoIDs">Takes in a list of videoID's to comment on/</param>
+    ''' <param name="videoIDs">Takes in a list of videoID's to comment on.</param>
     ''' <param name="comments">Takes in a list of comments to alternate between.</param>
     ''' <param name="Accounts">Takes in a Dictionary of YouTube accounts to alternate between.</param>
     Public Sub videoComment(ByVal videoIDs As List(Of String), ByVal comments As List(Of String), ByVal Accounts As Dictionary(Of String, String))
@@ -663,6 +669,7 @@ redo:
                             Exit Try
                         End If
 
+                        'CHECK FILTERS. SHOULD I OR NOT?
 
                         Dim sb As New StringBuilder
                         Dim session_token As String = Nothing
@@ -962,6 +969,103 @@ captchaRedo:
         RaiseEvent Notify(New Object(0) {"COMPLETED"})
     End Sub
 
+    ''' <summary>
+    ''' Likes or Dislikes YouTube videos.
+    ''' </summary>
+    ''' <param name="videoIDs">Takes in a list of videoID's to like.</param>
+    ''' <param name="Accounts">Takes in a Dictionary of YouTube accounts to alternate between. NOT DONE~~~~~~~</param>
+    ''' <param name="options">If option = FALSE, then the function will dislike, if TRUE, it will like.</param>
+    Public Sub likeVideos(ByVal videoIDs As List(Of String), ByVal Accounts As Dictionary(Of String, String), ByVal options As Boolean)
+        login(_AccountsArray.Item(0).Username.ToString, _AccountsArray.Item(0).Password.ToString)
+
+        If Not _Account.Cookies.Count = 0 Then
+
+            RaiseEvent Notify(New Object(1) {"USER_TOTAL", videoIDs.Count})
+
+            ' LOOP THROUGH SUBSCRIBTION OF USERS
+            For i As Integer = 0 To videoIDs.Count - 1
+                If Not _RequestStop = True Then
+                    ' NOTIFY OF NEXT UPCOMING USERNAME
+                    If Not i = (videoIDs.Count - 1) Then
+                        RaiseEvent Notify(New Object(1) {"USER_NEXT", videoIDs.Item(i + 1).ToString})
+                    Else
+                        RaiseEvent Notify(New Object(1) {"USER_NEXT", ""})
+                    End If
+
+                    Try
+                        With Http
+                            ' GET RESPONSE OF USER PAGE
+                            Dim hr As HttpResponse = .GetResponse("http://www.youtube.com/watch?v=" & videoIDs.Item(i).ToString)
+                            If Not hr.Exception Is Nothing Then
+                                Dim he As HttpError = .ProcessException(hr.Exception)
+                                RaiseEvent Notify(New Object(2) {"ERROR", videoIDs.Item(i).ToString, he.Message})
+                                Exit Try
+                            End If
+
+                            ' CHECK TO SEE IF USER BLACKLISTED
+                            If checkBlacklistVideo(videoIDs.Item(i).ToString) = True Then
+                                RaiseEvent Notify(New Object(2) {"SKIPPED", videoIDs.Item(i).ToString, "Blacklisted!"})
+                                Exit Try
+                            End If
+
+                            ' checkFILTERS SHOULD I OR NOT?
+
+
+                            ' CREATE STRINGBUILDER OF POST DATA
+                            Dim sb As New StringBuilder
+                            Dim plid As String
+                            Dim session_token As String
+
+                            plid = Split(hr.Html, "'PLAYBACK_ID': " & Chr(34))(1)
+                            plid = Split(plid, Chr(34))(0)
+                            session_token = Split(hr.Html, "'watch_actions_ajax', " & Chr(34))(1)
+                            session_token = Split(session_token, Chr(34))(0)
+
+                            sb.Append("session_token=" & .UrlEncode(session_token))
+
+                            .Referer = .LastResponseUri
+                            ' SUBMIT POST DATA
+                            hr = .GetResponse("http://www.youtube.com/watch_actions_ajax?action_dislike_video=1&video_id=" & videoIDs.Item(i) & "&plid=" & plid, sb.ToString)
+
+                            'CHECK TO SEE IF USER IS SUBSCRIBED OR IT FAILED
+                            If hr.Html.Contains("<![CDATA[0]]") Then
+                                RaiseEvent Notify(New Object(1) {"PASS", videoIDs.Item(i).ToString})
+                                Exit Try
+                            Else
+                                RaiseEvent Notify(New Object(2) {"ERROR", videoIDs.Item(i).ToString, "Invalid Request!"})
+                                Exit Try
+                            End If
+
+                            ' HTTP ERROR
+                            If Not hr.Exception Is Nothing Then
+                                Dim he As HttpError = .ProcessException(hr.Exception)
+                                RaiseEvent Notify(New Object(2) {"ERROR", videoIDs.Item(i).ToString, he.Message})
+                                Exit Try
+                            End If
+                        End With
+
+                        ' UNKNOWN ERROR
+                    Catch ex As Exception
+                        RaiseEvent Notify(New Object(2) {"ERROR", videoIDs.Item(i).ToString, "Unknown Error!"})
+                    End Try
+
+                    ' NOTIFY HOW MANY USERS ARE LEFT
+                    RaiseEvent Notify(New Object(1) {"USER_LEFT", (videoIDs.Count - 1) - i})
+                    If Not i = videoIDs.Count - 1 Then
+                        sleep(_Settings.waitTime)
+                    End If
+                Else
+                    Exit For
+                End If
+            Next
+            ' COMPLETED NOTIFICATION
+            RaiseEvent Notify(New Object(0) {"COMPLETED"})
+        End If
+    End Sub
+
+    Public Sub dislikeVideos(ByVal videoIDs As List(Of String), ByVal Accounts As Dictionary(Of String, String))
+
+    End Sub
     Private Sub sleep(ByVal time As Integer)
         Dim increment As Integer = time
 
@@ -993,57 +1097,45 @@ captchaRedo:
             End If
         Next
     End Sub
-    Private Function checkFilters(ByVal html As String) As Boolean
+    Public Function checkFilters(ByVal html As String) As Boolean
 
-        Dim age As Integer = 0, videos As Integer = 0, subs As Integer = 0, vidViews As Integer = 0
+        Dim videos As Integer = 0, subs As Integer = 0, vidViews As Integer = 0
+        Dim dateJoined As Date = Nothing, country As String = Nothing
+
+        Dim collection As MatchCollection
+        Dim regex As Regex = New Regex("(?<=<span class=" & Chr(34) & "stat-value" & Chr(34) & ">).+?(?=</span>)")
+        collection = regex.Matches(html)
+
+        subs = Integer.Parse(collection.Item(0).ToString.Replace(",", ""))
+        vidViews = Integer.Parse(collection.Item(1).ToString.Replace(",", ""))
+
+        regex = New Regex("(?<=<span class=" & Chr(34) & "value" & Chr(34) & ">).+?(?=</span>)")
+        collection = regex.Matches(html)
+
+        dateJoined = Format(CDate(collection.Item(0).ToString))
+        country = collection.Item(1).ToString
 
         Try
             ' CHECK GLOBAL AMOUNT OF MIN SUBS SPECEFIED IN CONFIG FILE
-            If _Settings.minSubs > 0 Then
-                ' SPLIT THE INFORMATION FOUND IN HTML OF USER PAGE AND GET THEIR MINSUBS
-                Dim lsubs As String = Nothing
-                lsubs = Split(html, "/subscribers" & Chr(34))(1)
-                lsubs = Split(lsubs, "</a>")(0)
-                lsubs = Split(lsubs, "stat-value" & Chr(34) & ">")(1)
-                lsubs = Split(lsubs, "<")(0)
-                subs = Convert.ToInt32(lsubs.Replace(",", ""))
+            If Not _Settings.minDateJoined.ToString = Nothing Then
+                Dim result As Integer = DateTime.Compare(dateJoined, _Settings.minDateJoined)
+                If result < 0 Then
+                    Return False
+                End If
+            End If
 
-                ' IF THE FILTER IS NOT SPECEFIC TO WHAT THE USER HAS PUT IN, RETURN FALSE.
+            If _Settings.minSubs > 0 Then
                 If Not subs >= _Settings.minSubs Then
                     Return False
                 End If
-
             End If
 
-            If _Settings.minVideos > 0 Then
-
-            End If
-
-            If _Settings.minAge > 0 Then
-                Dim lage As String = Nothing
-                lage = Split(html, "checked name=" & Chr(34) & "is_owner_age_displayed" & Chr(34))(1)
-                lage = Split(lage, "<div class=" & Chr(34))(0)
-                lage = Split(lage, "fixed-value" & Chr(34) & ">")(1)
-                lage = Split(lage, "<")(0)
-                age = Convert.ToInt32(lage)
-
-                If Not age >= _Settings.minAge Then
+            If _Settings.minVidViews > 0 Then
+                If Not vidViews >= _Settings.minVidViews Then
                     Return False
                 End If
             End If
 
-            If _Settings.minVideos > 0 Then
-                Dim lvidview As String = Nothing
-                lvidview = Split(html, "/analytics" & Chr(34))(1)
-                lvidview = Split(lvidview, "</a>")(0)
-                lvidview = Split(lvidview, "stat-value" & Chr(34) & ">")(1)
-                lvidview = Split(lvidview, "<")(0)
-                vidViews = Convert.ToInt32(lvidview.Replace(",", ""))
-
-                If Not vidViews >= _Settings.minVideos Then
-                    Return False
-                End If
-            End If
         Catch
             Return False
         End Try

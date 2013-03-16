@@ -1,15 +1,14 @@
 ﻿Public Class ApiSettings
-
-    Private _minAge As Integer
+    Private _minDateJoined As Date
     ''' <summary>
-    ''' Set the minimum age inorder for you to do anything regarding that user.
+    ''' Set the minimum date of when the user joined YouTube.
     ''' </summary>
-    Public Property minAge As Integer
+    Public Property minDateJoined As Date
         Get
-            Return _minAge
+            Return _minDateJoined
         End Get
-        Set(ByVal value As Integer)
-            _minAge = value
+        Set(ByVal value As Date)
+            _minDateJoined = value
         End Set
     End Property
 
@@ -23,19 +22,6 @@
         End Get
         Set(ByVal value As Integer)
             _minSubs = value
-        End Set
-    End Property
-
-    Private _minVideos As Integer
-    ''' <summary>
-    ''' Set the minimum amount of videos the user has inorder for you to do anything regarding that user.
-    ''' </summary>
-    Public Property minVideos As Integer
-        Get
-            Return _minVideos
-        End Get
-        Set(ByVal value As Integer)
-            _minVideos = value
         End Set
     End Property
 
